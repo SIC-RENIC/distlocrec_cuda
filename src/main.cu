@@ -1,0 +1,80 @@
+/*
+ * main.cu
+ *
+ *  Created on: 12/01/2017
+ *      Author: alfonso
+ */
+#include "distlocrec.h"
+
+extern void cargaArchivoLocs(char *);
+extern void cargaArchivoRecs(char *);
+extern void escribeSalida(double radio);
+
+extern void calculaDLR(void);
+
+void inicializacionPDIC();
+
+const double RT = 6371008.8;
+
+PLocalidad ploc;
+PRecurso prec;
+PDiccionario pdic;
+
+int cantiloc;
+int cantirec;
+
+/**
+ *
+ */
+int main(int cargs, char ** args) {
+
+	if (cargs < 5) {
+		fprintf(stderr, "No estan completos los parámetros:\n");
+		fprintf(stderr,
+				"\ndistlocrec.exe CantiLocs CantiRecs ArchivoLoc ArchivoRec\n\n");
+		fprintf(stderr, "\t CantiLocs:\tCantidad de localidades\n");
+		fprintf(stderr, "\t CantiRecs:\tCantidad de recursos\n");
+		fprintf(stderr, "\t ArchivoLoc:\tArchivo de localidades\n");
+		fprintf(stderr, "\t ArchivoRec:\tArchivo de recursos\n");
+		return 1;
+	}
+
+	cantiloc = atoi(*(args + 1));
+	cantirec = atoi(*(args + 2));
+	char * archlocs = *(args + 3);
+	char * archrecs = *(args + 4);
+
+	pdic = (PDiccionario) malloc(sizeof(sDiccionario) * 23);
+	inicializacionPDIC();
+
+	prec = (PRecurso) malloc(sizeof(sRecurso) * cantirec);
+	ploc = (PLocalidad) malloc(sizeof(sLocalidad) * cantiloc);
+
+	if (prec != NULL && ploc != NULL) {
+
+		cargaArchivoLocs(archlocs);
+		cargaArchivoRecs(archrecs);
+
+
+		calculaDLR();
+
+
+
+		escribeSalida(RT);
+	}
+
+	free(ploc);
+	free(prec);
+	free(pdic);
+	return 0;
+}
+
+/**
+ *
+ */
+void inicializacionPDIC() {
+	int ii;
+	for (ii = 0; ii < 23; ii++) {
+		(pdic + ii)->nombre[0] = '\0';
+	}
+}
