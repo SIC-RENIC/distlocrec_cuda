@@ -10,7 +10,7 @@
 
 #define CANTI_TIPO_REC 23
 
-//Definicion de la estructura de Localidad
+//Definición de la estructura de Localidad
 struct Localidad{
   int est;
   int mun;

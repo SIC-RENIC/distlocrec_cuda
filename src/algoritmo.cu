@@ -177,13 +177,8 @@ void liberaMemoriaDest(void) {
 void impactaResultado(void) {
 
 	int i, j, k;
-	/*PLocalidad plocr;*/
-	for (i = 0; i < cantiloc; i++) {
 
-		/*plocr=obtenPLocalidad((h_ploc+i));
-		 if(plocr==NULL){
-		 return;
-		 }*/
+	for (i = 0; i < cantiloc; i++) {
 		for (j = 0; j < cantirec; j++) {
 			for (k = 0; k < CANTI_TIPO_REC; k++) {
 				if (k == (prec + j)->tipo
