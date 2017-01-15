@@ -30,10 +30,10 @@ void escribeSalida(double radio){
   for(i=0;i<cantiloc;i++){
     PLocalidad p=(ploc+i);
 
-    for(j=0;j<23;j++){
-      e=(int)(p->c[j]/1000000);
-      m=(int)((p->c[j]-e*1000000)/1000);
-      l=p->c[j]-e*1000000-m*1000;
+    for(j=0;j<CANTI_TIPO_REC;j++){
+      e=(int)(p->c[j]/10000000);
+      m=(int)((p->c[j]-e*10000000)/10000);
+      l=p->c[j]-e*10000000-m*10000;
       fprintf(fh,"%d,%d,%d,%s,%d,%lf,%d,%d,%d,0\n",p->est,p->mun,p->loc,(pdic+j)->nombre,p->pob,radio*p->dist[j],e,m,l);
     }
 

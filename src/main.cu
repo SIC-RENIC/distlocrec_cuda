@@ -44,7 +44,7 @@ int main(int cargs, char ** args) {
 	char * archlocs = *(args + 3);
 	char * archrecs = *(args + 4);
 
-	pdic = (PDiccionario) malloc(sizeof(sDiccionario) * 23);
+	pdic = (PDiccionario) malloc(sizeof(sDiccionario) * CANTI_TIPO_REC);
 	inicializacionPDIC();
 
 	prec = (PRecurso) malloc(sizeof(sRecurso) * cantirec);
@@ -55,10 +55,7 @@ int main(int cargs, char ** args) {
 		cargaArchivoLocs(archlocs);
 		cargaArchivoRecs(archrecs);
 
-
 		calculaDLR();
-
-
 
 		escribeSalida(RT);
 	}
@@ -74,7 +71,7 @@ int main(int cargs, char ** args) {
  */
 void inicializacionPDIC() {
 	int ii;
-	for (ii = 0; ii < 23; ii++) {
+	for (ii = 0; ii < CANTI_TIPO_REC; ii++) {
 		(pdic + ii)->nombre[0] = '\0';
 	}
 }

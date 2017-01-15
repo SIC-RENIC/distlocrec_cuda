@@ -15,7 +15,7 @@ void cargaArchivoLocs(char *);
 void cargaArchivoRecs(char *);
 
 
-int recxtipo[23];
+
 
 int eml2conapo(int, int, int);
 double deg2rad(double);
@@ -71,10 +71,11 @@ void cargaArchivoLocs(char * archlocs){
 
     p->pob=pob;
 
-    for(j=0;j<23;j++){
+    for(j=0;j<CANTI_TIPO_REC;j++){
       p->dist[j]=M_PI;
     }
 
+    p->id=i;
     i++;
   }
 
@@ -110,13 +111,7 @@ void cargaArchivoRecs(char * archrecs){
 
   PRecurso p;
 
-  int i;
-  for(i=0;i<23;i++){
-	  recxtipo[i]=0;
-  }
-
-
-  i=0;
+  int i=0;
   while(fscanf(fh,"%d %d %d %lf %lf %s %d %d",&est,&mun,&loc,&lat,&lng,stipo,&tipo,&id)!=EOF){
 
 
@@ -147,7 +142,7 @@ void cargaArchivoRecs(char * archrecs){
     p->tipo=tipo;
     p->id=id;
 
-    recxtipo[tipo]++;
+
 
     p->uniq_id=i;
     i++;
@@ -155,9 +150,7 @@ void cargaArchivoRecs(char * archrecs){
 
   printf("Recursos : %d\n",i);
 
-  for(i=0;i<23;i++){
-	  printf("tipo: %d => %d\n",i,recxtipo[i]);
-   }
+
 
   free(res2);
 }
@@ -166,7 +159,7 @@ void cargaArchivoRecs(char * archrecs){
 * Función que convierte las claves de Estado, Municipio y Localidad a la clave Conapo
 */
 int eml2conapo(int e, int m, int l){
-  return (e*1000+m)*1000+l;
+  return (e*1000+m)*10000+l;
 }
 
 /**

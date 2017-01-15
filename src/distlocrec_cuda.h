@@ -25,6 +25,7 @@ struct SREC{
 	double x;
 	double y;
 	double z;
+	int tipo;
 	int id;
 }SRec;
 
@@ -33,8 +34,8 @@ typedef struct SREC * PSRec;
 
 
 struct SDEST{
-	int jmin;
-	double dist;
+	int jmin[CANTI_TIPO_REC];
+	double dist[CANTI_TIPO_REC];
 };
 
 typedef struct SDEST *PSDest;

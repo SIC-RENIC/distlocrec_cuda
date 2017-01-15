@@ -7,12 +7,16 @@
 #ifndef __DISTLOC_H__
 #define __DISTLOC_H__
 
+
+#define CANTI_TIPO_REC 23
+
 //Definicion de la estructura de Localidad
 struct Localidad{
   int est;
   int mun;
   int loc;
 
+  int id;
   int cconapo;
   double lat;
   double lng;
@@ -25,7 +29,7 @@ struct Localidad{
   int pob;
 
   //distancias mínimas a recursos
-  double dist[23];
+  double dist[CANTI_TIPO_REC];
 
   //claves conapo a las localidades de los recursos
   int c[23];
