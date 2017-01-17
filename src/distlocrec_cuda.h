@@ -6,6 +6,7 @@
  */
 
 #include <cuda.h>
+#include <cuda_runtime.h>
 
 #ifndef DISTLOCREC_CUDA_H_
 #define DISTLOCREC_CUDA_H_
@@ -34,8 +35,8 @@ typedef struct SREC * PSRec;
 
 
 struct SDEST{
-	int jmin[CANTI_TIPO_REC];
-	double dist[CANTI_TIPO_REC];
+	int jmin;
+	double dist;
 };
 
 typedef struct SDEST *PSDest;

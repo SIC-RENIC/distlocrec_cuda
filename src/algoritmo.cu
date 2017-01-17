@@ -3,6 +3,8 @@
 
 extern int cantiloc;
 extern int cantirec;
+extern int cantixtipo[CANTI_TIPO_REC];
+
 extern PLocalidad ploc;
 extern PRecurso prec;
 
@@ -11,23 +13,27 @@ void calculaDLR(void);
 void copiaLocalidad(void);
 void liberaLocalidad(void);
 
-void copiaRecursos(void);
-void liberaRecursos(void);
+void copiaRecursosxTema(void);
+void liberaRecursosxTema(void);
 
-void preparaMemoriaDest(void);
-void liberaMemoriaDest(void);
+void preparaMemoriaDestxTema(void);
+void liberaMemoriaDestxTema(void);
 
 void impactaResultado(void);
 
-
 PSLoc h_ploc = NULL;
-PSRec h_prec = NULL;
-
 PSLoc d_ploc = NULL;
+
+PSRec h_prec = NULL;
 PSRec d_prec = NULL;
 
 PSDest h_pdest = NULL;
 PSDest d_pdest = NULL;
+
+PSRec ah_prec[CANTI_TIPO_REC];
+PSRec ad_prec[CANTI_TIPO_REC];
+PSDest ah_pdest[CANTI_TIPO_REC];
+PSDest ad_pdest[CANTI_TIPO_REC];
 
 /**
  *
@@ -39,11 +45,8 @@ __global__ void calculadistLR(int nlocs, int nrecs, PSLoc ploc, PSRec prec,
 	struct SLOC loc;
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-	double dist[CANTI_TIPO_REC];
-	int jmin[CANTI_TIPO_REC];
-	for (j = 0; j < CANTI_TIPO_REC; j++) {
-		dist[j] = 4;
-	}
+	double dist = 4;
+	int jmin;
 
 	double aux;
 
@@ -53,16 +56,15 @@ __global__ void calculadistLR(int nlocs, int nrecs, PSLoc ploc, PSRec prec,
 			aux = loc.x * (prec + j)->x + loc.y * (prec + j)->y
 					+ loc.z * (prec + j)->z;
 			aux = acos(aux);
-			if (dist[(prec + j)->tipo] > aux) {
-				dist[(prec + j)->tipo] = aux;
-				jmin[(prec + j)->tipo] = (prec + j)->id;
+			if (dist > aux) {
+				dist = aux;
+				jmin = (prec + j)->id;
 			}
 		}
 
-		for (j = 0; j < CANTI_TIPO_REC; j++) {
-			(pdest + i)->jmin[j] = jmin[j];
-			(pdest + i)->dist[j] = dist[j];
-		}
+		(pdest + i)->jmin = jmin;
+		(pdest + i)->dist = dist;
+
 	}
 
 }
@@ -71,40 +73,48 @@ __global__ void calculadistLR(int nlocs, int nrecs, PSLoc ploc, PSRec prec,
  *
  */
 void calculaDLR(void) {
+	int tema;
+	cudaStream_t stream[CANTI_TIPO_REC];
+
+
 
 	copiaLocalidad();
-	copiaRecursos();
+	copiaRecursosxTema();
+	preparaMemoriaDestxTema();
 
-	/*int canti_hilos = 1024;*/
 	int canti_hilos = 640;
 	int canti_bloques = ceil(cantiloc / canti_hilos) + 1;
 
 	printf("Bloques: %d Hilos: %d\n", canti_bloques, canti_hilos);
 
-	cudaMalloc((void**) &(d_ploc), cantiloc * sizeof(struct SLOC));
-	cudaMemcpy(d_ploc, h_ploc, cantiloc * sizeof(struct SLOC),
-			cudaMemcpyHostToDevice);
 
-	cudaMalloc((void**) &(d_prec), cantirec * sizeof(struct SREC));
-	cudaMemcpy(d_prec, h_prec, cantirec * sizeof(struct SREC),
-			cudaMemcpyHostToDevice);
+	for (tema = 0; tema < CANTI_TIPO_REC; tema++) {
+			cudaStreamCreate(&stream[tema]);
+		}
 
-	preparaMemoriaDest();
+	for (tema = 0; tema < CANTI_TIPO_REC; tema++) {
 
-	calculadistLR<<<canti_bloques, canti_hilos>>>(cantiloc, cantirec, d_ploc,
-			d_prec, d_pdest);
+		cudaMemcpyAsync(ad_pdest[tema], ah_pdest[tema],
+				cantiloc * sizeof(struct SDEST), cudaMemcpyHostToDevice,
+				stream[tema]);
 
-	cudaMemcpy(h_pdest, d_pdest, cantiloc * sizeof(struct SDEST),
-			cudaMemcpyDeviceToHost);
+		calculadistLR<<<canti_bloques, canti_hilos, 0, stream[tema]>>>(cantiloc,
+				cantixtipo[tema], d_ploc, ad_prec[tema], ad_pdest[tema]);
+
+		cudaMemcpyAsync(ah_pdest[tema], ad_pdest[tema],
+				cantiloc * sizeof(struct SDEST), cudaMemcpyDeviceToHost,
+				stream[tema]);
+
+	}
+
+	for (tema = 0; tema < CANTI_TIPO_REC; tema++) {
+		cudaStreamSynchronize(stream[tema]);
+	}
 
 	impactaResultado();
 
-	liberaMemoriaDest();
-
-	cudaFree(d_prec);
-	cudaFree(d_ploc);
-
-	liberaRecursos();
+	liberaMemoriaDestxTema();
+	liberaRecursosxTema();
 	liberaLocalidad();
 }
 
@@ -121,75 +131,84 @@ void copiaLocalidad(void) {
 		(h_ploc + i)->z = (ploc + i)->z;
 		(h_ploc + i)->id = (ploc + i)->id;
 	}
+
+	cudaMalloc((void**) &(d_ploc), cantiloc * sizeof(struct SLOC));
+	cudaMemcpy(d_ploc, h_ploc, cantiloc * sizeof(struct SLOC),
+			cudaMemcpyHostToDevice);
 }
 
 /**
  *
  */
 void liberaLocalidad(void) {
+	cudaFree(d_ploc);
 	free(h_ploc);
 }
 
 /**
  *
  */
-void copiaRecursos(void) {
-	int i;
-	h_prec = (PSRec) malloc(sizeof(struct SREC) * cantirec);
-	for (i = 0; i < cantirec; i++) {
-		(h_prec + i)->x = (prec + i)->x;
-		(h_prec + i)->y = (prec + i)->y;
-		(h_prec + i)->z = (prec + i)->z;
-		(h_prec + i)->id = (prec + i)->uniq_id;
-		(h_prec + i)->tipo = (prec + i)->tipo;
+void copiaRecursosxTema(void) {
+
+	for (int tema = 0; tema < CANTI_TIPO_REC; tema++) {
+		cudaMallocHost((void **) &ah_prec[tema],
+				sizeof(struct SREC) * cantixtipo[tema]);
+		int j = 0;
+		for (int i = 0; i < cantirec; i++) {
+			if ((prec + i)->tipo == tema) {
+				(ah_prec[tema] + j)->x = (prec + i)->x;
+				(ah_prec[tema] + j)->y = (prec + i)->y;
+				(ah_prec[tema] + j)->z = (prec + i)->z;
+				(ah_prec[tema] + j)->id = (prec + i)->uniq_id;
+				(ah_prec[tema] + j)->tipo = (prec + i)->tipo;
+				j++;
+			}
+		}
 	}
 }
 
 /**
  *
  */
-void liberaRecursos(void) {
-	free(h_prec);
+void liberaRecursosxTema(void) {
+	for (int tema = 0; tema < CANTI_TIPO_REC; tema++) {
+		cudaFreeHost(ah_prec[tema]);
+	}
 }
 
-/**
- *
- */
-void preparaMemoriaDest(void) {
+void preparaMemoriaDestxTema(void) {
 
-	h_pdest = (PSDest) malloc(sizeof(struct SDEST) * cantiloc);
-	cudaMalloc((void**) &(d_pdest), cantiloc * sizeof(struct SDEST));
+	for (int tema = 0; tema < CANTI_TIPO_REC; tema++) {
+		cudaMallocHost((void **) &ah_pdest[tema],
+				sizeof(struct SDEST) * cantiloc);
+		cudaMalloc((void**) &ad_pdest[tema], cantiloc * sizeof(struct SDEST));
+	}
+
 }
 
-/**
- *
- */
-void liberaMemoriaDest(void) {
-	free(h_pdest);
-	cudaFree(d_pdest);
-	h_pdest = NULL;
-	d_pdest = NULL;
+void liberaMemoriaDestxTema(void) {
+	for (int tema = 0; tema < CANTI_TIPO_REC; tema++) {
+		cudaFreeHost(ah_pdest[tema]);
+		cudaFree(ad_pdest[tema]);
+	}
 }
+
+
 
 /**
  *
  */
 void impactaResultado(void) {
 
-	int i, j, k;
-
-	for (i = 0; i < cantiloc; i++) {
-		for (j = 0; j < cantirec; j++) {
-			for (k = 0; k < CANTI_TIPO_REC; k++) {
-				if (k == (prec + j)->tipo
-						&& (h_pdest + i)->jmin[k] == (prec + j)->uniq_id) {
-
-					(ploc + i)->dist[(prec + j)->tipo] = (h_pdest + i)->dist[k];
-					(ploc + i)->c[(prec + j)->tipo] = (prec + j)->cconapo;
+	for(int tema=0;tema<CANTI_TIPO_REC;tema++){
+		for (int i = 0; i < cantiloc; i++) {
+			for (int j = 0; j < cantirec; j++) {
+				if((ah_pdest[tema]+i)->jmin==(prec + j)->uniq_id){
+					(ploc + i)->dist[tema] = (ah_pdest[tema] + i)->dist;
+					(ploc + i)->c[tema] = (prec + j)->cconapo;
 				}
 			}
 		}
 	}
+
 }
-
-

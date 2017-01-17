@@ -15,7 +15,7 @@ void cargaArchivoLocs(char *);
 void cargaArchivoRecs(char *);
 
 
-
+int cantixtipo[CANTI_TIPO_REC];
 
 int eml2conapo(int, int, int);
 double deg2rad(double);
@@ -111,7 +111,13 @@ void cargaArchivoRecs(char * archrecs){
 
   PRecurso p;
 
-  int i=0;
+  int i;
+
+  for(i=0;i<CANTI_TIPO_REC;i++){
+    cantixtipo[i]=0;
+  }
+
+  i=0;
   while(fscanf(fh,"%d %d %d %lf %lf %s %d %d",&est,&mun,&loc,&lat,&lng,stipo,&tipo,&id)!=EOF){
 
 
@@ -142,7 +148,7 @@ void cargaArchivoRecs(char * archrecs){
     p->tipo=tipo;
     p->id=id;
 
-
+    cantixtipo[tipo]++;
 
     p->uniq_id=i;
     i++;
@@ -177,6 +183,3 @@ void cesfe2carte(double lat, double lng, double *res){
   *(res+1)=cos(lng)*cos(lat);
   *(res+2)=sin(lat);
 }
-
-
-
