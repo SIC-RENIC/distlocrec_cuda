@@ -24,11 +24,7 @@ void impactaResultado(void);
 PSLoc h_ploc = NULL;
 PSLoc d_ploc = NULL;
 
-PSRec h_prec = NULL;
-PSRec d_prec = NULL;
 
-PSDest h_pdest = NULL;
-PSDest d_pdest = NULL;
 
 PSRec ah_prec[CANTI_TIPO_REC];
 PSRec ad_prec[CANTI_TIPO_REC];
@@ -39,10 +35,10 @@ PSDest ad_pdest[CANTI_TIPO_REC];
  *
  */
 
-__global__ void calculadistLR(int nlocs, int nrecs, PSLoc ploc, PSRec prec,
-		PSDest pdest) {
+__global__ void calculadistLR(int nlocs, int nrecs, PSLoc ploc_k, PSRec prec_k,PSDest pdest_k) {
 	int j;
 	struct SLOC loc;
+
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 
 	double dist = 4;
@@ -51,19 +47,21 @@ __global__ void calculadistLR(int nlocs, int nrecs, PSLoc ploc, PSRec prec,
 	double aux;
 
 	if (i < nlocs) {
-		loc = *(ploc + i);
+		loc = *(ploc_k + i);
 		for (j = 0; j < nrecs; j++) {
-			aux = loc.x * (prec + j)->x + loc.y * (prec + j)->y
-					+ loc.z * (prec + j)->z;
+
+			aux = loc.x * (prec_k + j)->x + loc.y * (prec_k + j)->y
+					+ loc.z * (prec_k + j)->z;
 			aux = acos(aux);
 			if (dist > aux) {
 				dist = aux;
-				jmin = (prec + j)->id;
+				jmin = (prec_k + j)->id;
+				if(dist==0.0)break;
 			}
 		}
 
-		(pdest + i)->jmin = jmin;
-		(pdest + i)->dist = dist;
+		(pdest_k + i)->jmin = jmin;
+		(pdest_k + i)->dist = dist;
 
 	}
 
@@ -88,15 +86,19 @@ void calculaDLR(void) {
 	printf("Bloques: %d Hilos: %d\n", canti_bloques, canti_hilos);
 
 
-	for (tema = 0; tema < CANTI_TIPO_REC; tema++) {
-			cudaStreamCreate(&stream[tema]);
-		}
+
 
 	for (tema = 0; tema < CANTI_TIPO_REC; tema++) {
 
-		cudaMemcpyAsync(ad_pdest[tema], ah_pdest[tema],
+		cudaStreamCreate(&stream[tema]);
+
+		cudaMemcpyAsync(ad_prec[tema], ah_prec[tema],
+				sizeof(struct SREC) * cantixtipo[tema], cudaMemcpyHostToDevice,
+						stream[tema]);
+
+		/*cudaMemcpyAsync(ad_pdest[tema], ah_pdest[tema],
 				cantiloc * sizeof(struct SDEST), cudaMemcpyHostToDevice,
-				stream[tema]);
+				stream[tema]);*/
 
 		calculadistLR<<<canti_bloques, canti_hilos, 0, stream[tema]>>>(cantiloc,
 				cantixtipo[tema], d_ploc, ad_prec[tema], ad_pdest[tema]);
@@ -110,6 +112,7 @@ void calculaDLR(void) {
 	for (tema = 0; tema < CANTI_TIPO_REC; tema++) {
 		cudaStreamSynchronize(stream[tema]);
 	}
+
 
 	impactaResultado();
 
@@ -151,7 +154,7 @@ void liberaLocalidad(void) {
 void copiaRecursosxTema(void) {
 
 	for (int tema = 0; tema < CANTI_TIPO_REC; tema++) {
-		cudaMallocHost((void **) &ah_prec[tema],
+		cudaMallocHost((void **) &(ah_prec[tema]),
 				sizeof(struct SREC) * cantixtipo[tema]);
 		int j = 0;
 		for (int i = 0; i < cantirec; i++) {
@@ -164,6 +167,8 @@ void copiaRecursosxTema(void) {
 				j++;
 			}
 		}
+
+		cudaMalloc((void**) &(ad_prec[tema]), sizeof(struct SREC) * cantixtipo[tema]);
 	}
 }
 
@@ -173,15 +178,16 @@ void copiaRecursosxTema(void) {
 void liberaRecursosxTema(void) {
 	for (int tema = 0; tema < CANTI_TIPO_REC; tema++) {
 		cudaFreeHost(ah_prec[tema]);
+		cudaFree(ad_prec[tema]);
 	}
 }
 
 void preparaMemoriaDestxTema(void) {
 
 	for (int tema = 0; tema < CANTI_TIPO_REC; tema++) {
-		cudaMallocHost((void **) &ah_pdest[tema],
+		cudaMallocHost((void **) &(ah_pdest[tema]),
 				sizeof(struct SDEST) * cantiloc);
-		cudaMalloc((void**) &ad_pdest[tema], cantiloc * sizeof(struct SDEST));
+		cudaMalloc((void**) &(ad_pdest[tema]), cantiloc * sizeof(struct SDEST));
 	}
 
 }
