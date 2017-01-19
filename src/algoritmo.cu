@@ -75,7 +75,7 @@ void calculaDLR(void) {
 	copiaLocalidad();
 	copiaRecursos();
 
-	/*int canti_hilos = 1024;*/
+
 	int canti_hilos = 640;
 	int canti_bloques = ceil(cantiloc / canti_hilos) + 1;
 
