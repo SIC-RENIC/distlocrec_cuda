@@ -8,9 +8,8 @@
 
 extern void cargaArchivoLocs(char *);
 extern void cargaArchivoRecs(char *);
-extern void escribeSalida(double radio);
 
-extern void calculaDLR(void);
+extern void calculaDLRv2(double radio);
 
 void inicializacionPDIC();
 
@@ -55,9 +54,9 @@ int main(int cargs, char ** args) {
 		cargaArchivoLocs(archlocs);
 		cargaArchivoRecs(archrecs);
 
-		calculaDLR();
+		calculaDLRv2(RT);
 
-		escribeSalida(RT);
+
 	}
 
 	free(ploc);
