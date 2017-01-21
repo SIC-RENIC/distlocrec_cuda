@@ -49,7 +49,7 @@ int *didrec_resultado;
 /**
  *
  */
-__global__ void calculadistLRv2(int nlocs, int nrecs, int ntipo, double* dloc_x,
+__global__ void calculadistLRv2(int nlocs, int nrecs, int ntipo,int offset, double* dloc_x,
 		double* dloc_y, double* dloc_z, double* drec_x, double* drec_y,
 		double* drec_z, double *ddist_resultado, int *didrec_resultado) {
 
@@ -65,6 +65,7 @@ __global__ void calculadistLRv2(int nlocs, int nrecs, int ntipo, double* dloc_x,
 
 		for (int j = 0; j < nrecs; j++) {
 			daux = *(drec_x + j) * x + *(drec_y + j) * y + *(drec_z + j) * z;
+			daux = acos(daux);
 			if (daux < dist) {
 				dist = daux;
 				idrec = j;
@@ -72,7 +73,7 @@ __global__ void calculadistLRv2(int nlocs, int nrecs, int ntipo, double* dloc_x,
 		}
 
 		*(ddist_resultado + (id * CANTI_TIPO_REC) + ntipo) = dist;
-		*(didrec_resultado + (id * CANTI_TIPO_REC) + ntipo) = idrec;
+		*(didrec_resultado + (id * CANTI_TIPO_REC) + ntipo) = idrec+offset;
 	}
 
 }
@@ -92,28 +93,41 @@ void calculaDLRv2(double radio) {
 
 	int offset = 0;
 
+	cudaMemcpy(dloc_x, hloc_x, cantiloc * sizeof(double),
+			cudaMemcpyHostToDevice);
+	cudaMemcpy(dloc_y, hloc_y, cantiloc * sizeof(double),
+			cudaMemcpyHostToDevice);
+	cudaMemcpy(dloc_z, hloc_z, cantiloc * sizeof(double),
+			cudaMemcpyHostToDevice);
+
+	cudaMemcpy(drec_x, hrec_x, cantirec * sizeof(double),
+			cudaMemcpyHostToDevice);
+	cudaMemcpy(drec_y, hrec_y, cantirec * sizeof(double),
+			cudaMemcpyHostToDevice);
+	cudaMemcpy(drec_z, hrec_z, cantirec * sizeof(double),
+			cudaMemcpyHostToDevice);
+
 	for (tema = 0; tema < CANTI_TIPO_REC; tema++) {
 
 		cudaStreamCreate(&stream[tema]);
 
 		calculadistLRv2<<<canti_bloques, canti_hilos, 0, stream[tema]>>>(
-				cantiloc, cantixtipo[tema],tema, dloc_x, dloc_y, dloc_z,
+				cantiloc, cantixtipo[tema], tema,offset, dloc_x, dloc_y, dloc_z,
 				(drec_x + offset), (drec_y + offset), (drec_z + offset),
 				ddist_resultado, didrec_resultado);
 
-		cudaMemcpyAsync(hdist_resultado, ddist_resultado,
-				cantiloc * CANTI_TIPO_REC * sizeof(double),
-				cudaMemcpyDeviceToHost, stream[tema]);
-
-		cudaMemcpyAsync(hidrec_resultado, didrec_resultado,
-				cantiloc * CANTI_TIPO_REC * sizeof(int), cudaMemcpyDeviceToHost,
-				stream[tema]);
-
+		offset += cantixtipo[tema];
 	}
 
 	for (tema = 0; tema < CANTI_TIPO_REC; tema++) {
 		cudaStreamSynchronize(stream[tema]);
 	}
+
+	cudaMemcpy(hdist_resultado, ddist_resultado,
+			cantiloc * CANTI_TIPO_REC * sizeof(double), cudaMemcpyDeviceToHost);
+
+	cudaMemcpy(hidrec_resultado, didrec_resultado,
+			cantiloc * CANTI_TIPO_REC * sizeof(int), cudaMemcpyDeviceToHost);
 
 	imprimeResultado(radio);
 
@@ -158,7 +172,6 @@ void alojaMemoria(void) {
 	cudaMalloc((void**) &(drec_z), cantirec * sizeof(double));
 
 //Resultados
-
 	cudaMallocHost((void **) &(hdist_resultado),
 			cantiloc * CANTI_TIPO_REC * sizeof(double));
 
@@ -213,8 +226,8 @@ void imprimeResultado(double radio) {
 			PRecurso pr = (prec + j);
 
 			fprintf(fh, "%d,%d,%d,%s,%d,%lf,%d,%d,%d,0\n", pl->est, pl->mun,
-					pl->loc, (pdic + tema)->nombre, pl->pob, radio * distancia, pr->est,
-					pr->mun, pr->loc);
+					pl->loc, (pdic + tema)->nombre, pl->pob, radio * distancia,
+					pr->est, pr->mun, pr->loc);
 
 		}
 	}

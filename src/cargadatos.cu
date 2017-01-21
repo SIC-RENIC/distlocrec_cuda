@@ -156,7 +156,12 @@ void cargaArchivoRecs(char * archrecs){
 
   printf("Recursos : %d\n",i);
 
-
+  int total=0;
+  for(i=0;i<CANTI_TIPO_REC;i++){
+        printf("tipo:%d, %d\n",i,cantixtipo[i]);
+        total+=cantixtipo[i];
+      }
+  //printf("Total: %d\n",total);
 
   free(res2);
 }
