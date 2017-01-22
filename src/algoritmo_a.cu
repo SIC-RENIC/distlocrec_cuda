@@ -191,6 +191,9 @@ void alojaMemoria(void) {
  */
 void liberaMemoria(void) {
 
+	cudaFree(didrec_resultado);
+	cudaFreeHost(hidrec_resultado);
+
 	cudaFree(ddist_resultado);
 	cudaFreeHost(hdist_resultado);
 
