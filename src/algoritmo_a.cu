@@ -64,8 +64,12 @@ __global__ void calculadistLRv2(int nlocs, int nrecs, int ntipo,int offset, floa
 		float z = *(dloc_z + id);
 
 		for (int j = 0; j < nrecs; j++) {
+
+
+
+
 			daux = *(drec_x + j) * x + *(drec_y + j) * y + *(drec_z + j) * z;
-			daux = acos(daux);
+			daux = acosf(daux);
 			if (daux < dist) {
 				dist = daux;
 				idrec = j;
