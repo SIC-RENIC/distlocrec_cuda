@@ -6,10 +6,10 @@
  */
 #include "distlocrec.h"
 
-void calculaDLRv2(double radio);
+void calculaDLRv2(float radio);
 void alojaMemoria(void);
 void liberaMemoria(void);
-void imprimeResultado(double radio);
+void imprimeResultado(float radio);
 
 extern int cantiloc;
 extern int cantirec;
@@ -20,28 +20,28 @@ extern PDiccionario pdic;
 extern int cantixtipo[CANTI_TIPO_REC];
 
 //coordenadas de las localidades
-double *hloc_x;
-double *hloc_y;
-double *hloc_z;
+float *hloc_x;
+float *hloc_y;
+float *hloc_z;
 
-double *dloc_x;
-double *dloc_y;
-double *dloc_z;
+float *dloc_x;
+float *dloc_y;
+float *dloc_z;
 
 //coordenadas de los recursos
 
-double *hrec_x;
-double *hrec_y;
-double *hrec_z;
+float *hrec_x;
+float *hrec_y;
+float *hrec_z;
 
-double *drec_x;
-double *drec_y;
-double *drec_z;
+float *drec_x;
+float *drec_y;
+float *drec_z;
 
 //valores resultantes del calculo
 
-double *hdist_resultado;
-double *ddist_resultado;
+float *hdist_resultado;
+float *ddist_resultado;
 
 int *hidrec_resultado;
 int *didrec_resultado;
@@ -49,19 +49,19 @@ int *didrec_resultado;
 /**
  *
  */
-__global__ void calculadistLRv2(int nlocs, int nrecs, int ntipo,int offset, double* dloc_x,
-		double* dloc_y, double* dloc_z, double* drec_x, double* drec_y,
-		double* drec_z, double *ddist_resultado, int *didrec_resultado) {
+__global__ void calculadistLRv2(int nlocs, int nrecs, int ntipo,int offset, float* dloc_x,
+		float* dloc_y, float* dloc_z, float* drec_x, float* drec_y,
+		float* drec_z, float *ddist_resultado, int *didrec_resultado) {
 
 	int id = blockIdx.x * blockDim.x + threadIdx.x;
-	double dist = 4;
+	float dist = 4;
 	int idrec = 0;
-	double daux;
+	float daux;
 
 	if (id < nlocs) {
-		double x = *(dloc_x + id);
-		double y = *(dloc_y + id);
-		double z = *(dloc_z + id);
+		float x = *(dloc_x + id);
+		float y = *(dloc_y + id);
+		float z = *(dloc_z + id);
 
 		for (int j = 0; j < nrecs; j++) {
 			daux = *(drec_x + j) * x + *(drec_y + j) * y + *(drec_z + j) * z;
@@ -81,7 +81,7 @@ __global__ void calculadistLRv2(int nlocs, int nrecs, int ntipo,int offset, doub
 /**
  *
  */
-void calculaDLRv2(double radio) {
+void calculaDLRv2(float radio) {
 
 	int tema;
 
@@ -93,18 +93,18 @@ void calculaDLRv2(double radio) {
 
 	int offset = 0;
 
-	cudaMemcpy(dloc_x, hloc_x, cantiloc * sizeof(double),
+	cudaMemcpy(dloc_x, hloc_x, cantiloc * sizeof(float),
 			cudaMemcpyHostToDevice);
-	cudaMemcpy(dloc_y, hloc_y, cantiloc * sizeof(double),
+	cudaMemcpy(dloc_y, hloc_y, cantiloc * sizeof(float),
 			cudaMemcpyHostToDevice);
-	cudaMemcpy(dloc_z, hloc_z, cantiloc * sizeof(double),
+	cudaMemcpy(dloc_z, hloc_z, cantiloc * sizeof(float),
 			cudaMemcpyHostToDevice);
 
-	cudaMemcpy(drec_x, hrec_x, cantirec * sizeof(double),
+	cudaMemcpy(drec_x, hrec_x, cantirec * sizeof(float),
 			cudaMemcpyHostToDevice);
-	cudaMemcpy(drec_y, hrec_y, cantirec * sizeof(double),
+	cudaMemcpy(drec_y, hrec_y, cantirec * sizeof(float),
 			cudaMemcpyHostToDevice);
-	cudaMemcpy(drec_z, hrec_z, cantirec * sizeof(double),
+	cudaMemcpy(drec_z, hrec_z, cantirec * sizeof(float),
 			cudaMemcpyHostToDevice);
 
 	for (tema = 0; tema < CANTI_TIPO_REC; tema++) {
@@ -124,7 +124,7 @@ void calculaDLRv2(double radio) {
 	}
 
 	cudaMemcpy(hdist_resultado, ddist_resultado,
-			cantiloc * CANTI_TIPO_REC * sizeof(double), cudaMemcpyDeviceToHost);
+			cantiloc * CANTI_TIPO_REC * sizeof(float), cudaMemcpyDeviceToHost);
 
 	cudaMemcpy(hidrec_resultado, didrec_resultado,
 			cantiloc * CANTI_TIPO_REC * sizeof(int), cudaMemcpyDeviceToHost);
@@ -139,9 +139,9 @@ void calculaDLRv2(double radio) {
  */
 void alojaMemoria(void) {
 //Localidades
-	hloc_x = (double*) malloc(sizeof(double) * cantiloc);
-	hloc_y = (double*) malloc(sizeof(double) * cantiloc);
-	hloc_z = (double*) malloc(sizeof(double) * cantiloc);
+	hloc_x = (float*) malloc(sizeof(float) * cantiloc);
+	hloc_y = (float*) malloc(sizeof(float) * cantiloc);
+	hloc_z = (float*) malloc(sizeof(float) * cantiloc);
 
 	for (int i = 0; i < cantiloc; i++) {
 		Localidad p = *(ploc + i);
@@ -150,14 +150,14 @@ void alojaMemoria(void) {
 		*(hloc_z + i) = p.z;
 	}
 
-	cudaMalloc((void**) &(dloc_x), cantiloc * sizeof(double));
-	cudaMalloc((void**) &(dloc_y), cantiloc * sizeof(double));
-	cudaMalloc((void**) &(dloc_z), cantiloc * sizeof(double));
+	cudaMalloc((void**) &(dloc_x), cantiloc * sizeof(float));
+	cudaMalloc((void**) &(dloc_y), cantiloc * sizeof(float));
+	cudaMalloc((void**) &(dloc_z), cantiloc * sizeof(float));
 
 //Recursos
-	hrec_x = (double*) malloc(sizeof(double) * cantirec);
-	hrec_y = (double*) malloc(sizeof(double) * cantirec);
-	hrec_z = (double*) malloc(sizeof(double) * cantirec);
+	hrec_x = (float*) malloc(sizeof(float) * cantirec);
+	hrec_y = (float*) malloc(sizeof(float) * cantirec);
+	hrec_z = (float*) malloc(sizeof(float) * cantirec);
 
 	for (int i = 0; i < cantirec; i++) {
 		Recurso p = *(prec + i);
@@ -167,16 +167,16 @@ void alojaMemoria(void) {
 
 	}
 
-	cudaMalloc((void**) &(drec_x), cantirec * sizeof(double));
-	cudaMalloc((void**) &(drec_y), cantirec * sizeof(double));
-	cudaMalloc((void**) &(drec_z), cantirec * sizeof(double));
+	cudaMalloc((void**) &(drec_x), cantirec * sizeof(float));
+	cudaMalloc((void**) &(drec_y), cantirec * sizeof(float));
+	cudaMalloc((void**) &(drec_z), cantirec * sizeof(float));
 
 //Resultados
 	cudaMallocHost((void **) &(hdist_resultado),
-			cantiloc * CANTI_TIPO_REC * sizeof(double));
+			cantiloc * CANTI_TIPO_REC * sizeof(float));
 
 	cudaMalloc((void**) &(ddist_resultado),
-			cantiloc * CANTI_TIPO_REC * sizeof(double));
+			cantiloc * CANTI_TIPO_REC * sizeof(float));
 
 	cudaMallocHost((void **) &(hidrec_resultado),
 			cantiloc * CANTI_TIPO_REC * sizeof(int));
@@ -217,14 +217,14 @@ void liberaMemoria(void) {
 /**
  *
  */
-void imprimeResultado(double radio) {
+void imprimeResultado(float radio) {
 	FILE * fh;
 
 	fh = fopen("./salidav2.txt", "w");
 	for (int i = 0; i < cantiloc; i++) {
 		PLocalidad pl = (ploc + i);
 		for (int tema = 0; tema < CANTI_TIPO_REC; tema++) {
-			double distancia = *(hdist_resultado + (i * CANTI_TIPO_REC) + tema);
+			float distancia = *(hdist_resultado + (i * CANTI_TIPO_REC) + tema);
 			int j = *(hidrec_resultado + (i * CANTI_TIPO_REC) + tema);
 			PRecurso pr = (prec + j);
 

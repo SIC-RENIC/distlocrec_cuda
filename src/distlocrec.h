@@ -18,18 +18,18 @@ struct Localidad{
 
   int id;
   int cconapo;
-  double lat;
-  double lng;
+  float lat;
+  float lng;
 
  //coordenas cartesianas
-  double x;
-  double y;
-  double z;
+  float x;
+  float y;
+  float z;
 
   int pob;
 
   //distancias mínimas a recursos
-  double dist[CANTI_TIPO_REC];
+  float dist[CANTI_TIPO_REC];
 
   //claves conapo a las localidades de los recursos
   int c[23];
@@ -45,12 +45,12 @@ struct Recurso{
   int loc;
 
   int cconapo;
-  double lat;
-  double lng;
+  float lat;
+  float lng;
 
-  double x;
-  double y;
-  double z;
+  float x;
+  float y;
+  float z;
 
   char stipo[22];
   int tipo;

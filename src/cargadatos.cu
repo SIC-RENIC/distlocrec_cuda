@@ -18,8 +18,8 @@ void cargaArchivoRecs(char *);
 int cantixtipo[CANTI_TIPO_REC];
 
 int eml2conapo(int, int, int);
-double deg2rad(double);
-void cesfe2carte(double lat, double lng, double *res);
+float deg2rad(float);
+void cesfe2carte(float lat, float lng, float *res);
 
 
 /**
@@ -33,11 +33,11 @@ void cargaArchivoLocs(char * archlocs){
   int mun;
   int loc;
 
-  double lat,lng;
-  double latr,lngr;
+  float lat,lng;
+  float latr,lngr;
 
 
-  double *res2=(double *)malloc(3*sizeof(double));
+  float *res2=(float *)malloc(3*sizeof(float));
 
 
   int pob;
@@ -48,7 +48,7 @@ void cargaArchivoLocs(char * archlocs){
 
   int j=0;
   int i=0;
-  while(fscanf(fh,"%d %d %d %lf %lf %d",&est,&mun,&loc,&lat,&lng,&pob)!=EOF){
+  while(fscanf(fh,"%d %d %d %f %f %d",&est,&mun,&loc,&lat,&lng,&pob)!=EOF){
 
 
     latr=deg2rad(lat);
@@ -98,14 +98,14 @@ void cargaArchivoRecs(char * archrecs){
   int mun;
   int loc;
 
-  double lat,lng;
-  double latr,lngr;
+  float lat,lng;
+  float latr,lngr;
 
   char stipo[22];
   int tipo;
   int id;
 
-  double *res2=(double *)malloc(3*sizeof(double));
+  float *res2=(float *)malloc(3*sizeof(float));
 
   FILE *fh=fopen(archrecs,"r");
 
@@ -118,7 +118,7 @@ void cargaArchivoRecs(char * archrecs){
     }
 
     i=0;
-  while(fscanf(fh,"%d %d %d %lf %lf %s %d %d",&est,&mun,&loc,&lat,&lng,stipo,&tipo,&id)!=EOF){
+  while(fscanf(fh,"%d %d %d %f %f %s %d %d",&est,&mun,&loc,&lat,&lng,stipo,&tipo,&id)!=EOF){
 
 
     latr=deg2rad(lat);
@@ -176,14 +176,14 @@ int eml2conapo(int e, int m, int l){
 /**
 * Función que convierte los DEG a RAD
 */
-double deg2rad(double x){
+float deg2rad(float x){
   return M_PI*x/180.00;
 }
 
 /**
 * Función convierte coordenadas geográficas a coordenadas cartesianas espaciales
 */
-void cesfe2carte(double lat, double lng, double *res){
+void cesfe2carte(float lat, float lng, float *res){
   *(res)=sin(lng)*cos(lat);
   *(res+1)=cos(lng)*cos(lat);
   *(res+2)=sin(lat);

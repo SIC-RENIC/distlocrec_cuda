@@ -9,11 +9,11 @@
 extern void cargaArchivoLocs(char *);
 extern void cargaArchivoRecs(char *);
 
-extern void calculaDLRv2(double radio);
+extern void calculaDLRv2(float radio);
 
 void inicializacionPDIC();
 
-const double RT = 6371008.8;
+const float RT = 6371008.8;
 
 PLocalidad ploc;
 PRecurso prec;
