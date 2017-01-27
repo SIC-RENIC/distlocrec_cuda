@@ -274,11 +274,11 @@ void imprimeResultado(float radio) {
 		for (int tema = 0; tema < CANTI_TIPO_REC; tema++) {
 			float distancia = *(hdist_resultado + (i * CANTI_TIPO_REC) + tema);
 			int j = *(hidrec_resultado + (i * CANTI_TIPO_REC) + tema);
-						PRecurso pr = (prec + j);
+			PRecurso pr = (prec + j);
 
-						fprintf(fh, "%d,%d,%d,%s,%d,%lf,%d,%d,%d,0\n", pl->est, pl->mun,
-								pl->loc, (pdic + tema)->nombre, pl->pob, radio * distancia,
-								pr->est, pr->mun, pr->loc);
+			fprintf(fh, "%d,%d,%d,%s,%d,%lf,%d,%d,%d,0\n", pl->est, pl->mun,
+					pl->loc, (pdic + tema)->nombre, pl->pob, radio * distancia,
+					pr->est, pr->mun, pr->loc);
 		}
 	}
 
