@@ -51,10 +51,10 @@ int *didrec_resultado;
 /**
  *
  */
-__global__ void calculadistLRv3(int nlocs, int nrecs, int nrecsR, int ntipo,
-		int offset, int tambrec, float* dloc_x, float* dloc_y, float* dloc_z,
-		float* drec_x, float* drec_y, float* drec_z, int* drec_uid,
-		float *ddist_resultado, int *didrec_resultado) {
+__global__ void calculadistLRv3(int nlocs, int nrecsR, int ntipo, int offset,
+		int tambrec, float* dloc_x, float* dloc_y, float* dloc_z, float* drec_x,
+		float* drec_y, float* drec_z, int* drec_uid, float *ddist_resultado,
+		int *didrec_resultado) {
 
 	extern __shared__ float s[];
 	float* shfrec_x = s;
@@ -62,12 +62,12 @@ __global__ void calculadistLRv3(int nlocs, int nrecs, int nrecsR, int ntipo,
 	float* shfrec_z = (s + 2 * tambrec);
 	int* shirec_uid = (int *) (s + 3 * tambrec);
 
-	int id = blockIdx.x * blockDim.x + threadIdx.x;
+	unsigned int id = blockIdx.x * blockDim.x + threadIdx.x;
 
 	float dist = 4;
 	int idrec = -1;
 	float daux;
-	int j;
+	unsigned int j;
 
 	if (id < nlocs) {
 		float x = *(dloc_x + id);
@@ -76,17 +76,15 @@ __global__ void calculadistLRv3(int nlocs, int nrecs, int nrecsR, int ntipo,
 
 		for (j = threadIdx.x; j < tambrec; j += blockDim.x) {
 
-			if (j < nrecsR) {
-				*(shfrec_x + j) = *(drec_x + j);
-				*(shfrec_y + j) = *(drec_y + j);
-				*(shfrec_z + j) = *(drec_z + j);
-				*(shirec_uid + j) = *(drec_uid + j);
-			}
-
+			*(shfrec_x + j) = *(drec_x + j);
+			*(shfrec_y + j) = *(drec_y + j);
+			*(shfrec_z + j) = *(drec_z + j);
+			*(shirec_uid + j) = *(drec_uid + j);
 		}
+
 		__syncthreads();
 
-		for (int k = 0; k < tambrec && k < nrecsR; k++) {
+		for (int k = 0; k < tambrec; k++) {
 			daux = *(shfrec_x + k) * x + *(shfrec_y + k) * y
 					+ *(shfrec_z + k) * z;
 			daux = acosf(daux);
@@ -108,6 +106,89 @@ __global__ void calculadistLRv3(int nlocs, int nrecs, int nrecsR, int ntipo,
 /**
  *
  */
+__global__ void calculadistLRv3G(int nlocs, int nrecsR, int ntipo, int offset,
+		int tambrec, float* dloc_x, float* dloc_y, float* dloc_z, float* drec_x,
+		float* drec_y, float* drec_z, int* drec_uid, float *ddist_resultado,
+		int *didrec_resultado) {
+
+	extern __shared__ float s[];
+	float* shfrec_x = s;
+	float* shfrec_y = (s + tambrec);
+	float* shfrec_z = (s + 2 * tambrec);
+	int* shirec_uid = (int *) (s + 3 * tambrec);
+
+	unsigned int id = blockIdx.x * blockDim.x + threadIdx.x;
+
+	float dist = 4;
+	int idrec = -1;
+	float daux;
+	unsigned int k, j, tambrec_loc = tambrec;
+	unsigned int rec_faltantes = nrecsR, avance = 0;
+
+	int vueltas = 0;
+
+	if (id < nlocs) {
+		float x = *(dloc_x + id);
+		float y = *(dloc_y + id);
+		float z = *(dloc_z + id);
+
+		do {
+			j = threadIdx.x;
+			while (j < tambrec_loc && (j + avance) < nrecsR) {
+
+				*(shfrec_x + j) = *(drec_x + j + avance);
+				*(shfrec_y + j) = *(drec_y + j + avance);
+				*(shfrec_z + j) = *(drec_z + j + avance);
+				*(shirec_uid + j) = *(drec_uid + j + avance);
+
+				j += blockDim.x;
+			}
+
+			__syncthreads();
+
+			for (k = 0; k < tambrec_loc; k++) {
+				daux = *(shfrec_x + k) * x + *(shfrec_y + k) * y
+						+ *(shfrec_z + k) * z;
+				daux = acosf(daux);
+				if (daux < dist) {
+					dist = daux;
+					idrec = *(shirec_uid + k);
+				}
+			}
+
+			avance += tambrec_loc;
+			rec_faltantes -= avance;
+
+			if (rec_faltantes < tambrec_loc) {
+				tambrec_loc = rec_faltantes;
+			}
+
+			__syncthreads();
+
+			vueltas++;
+		} while (rec_faltantes > 0 && vueltas < 4);
+
+		*(ddist_resultado + (id * CANTI_TIPO_REC) + ntipo) = dist;
+		*(didrec_resultado + (id * CANTI_TIPO_REC) + ntipo) = idrec;
+
+	}
+
+}
+
+__global__ void calculadistLRv3G_vacio(int nlocs, int nrecsR, int ntipo,
+		int offset, int tambrec, float* dloc_x, float* dloc_y, float* dloc_z,
+		float* drec_x, float* drec_y, float* drec_z, int* drec_uid,
+		float *ddist_resultado, int *didrec_resultado) {
+
+	unsigned int id = blockIdx.x * blockDim.x + threadIdx.x;
+
+	*(ddist_resultado + (id * CANTI_TIPO_REC) + ntipo) = 0;
+	*(didrec_resultado + (id * CANTI_TIPO_REC) + ntipo) = 0;
+}
+
+/**
+ *
+ */
 void calculaDLRv2(float radio) {
 
 	int tema;
@@ -115,10 +196,9 @@ void calculaDLRv2(float radio) {
 	int canti_hilos = 640;
 	int canti_bloques = ceil(cantiloc / canti_hilos) + 1;
 
-	int tambrec = 3072;
+	const unsigned int tambrec = 3072;
 
-	size_t tamsharedmem = sizeof(float) * 4 * tambrec;
-	int cantidad_rec_alojados;
+	size_t tamsharedmem;
 
 	alojaMemoria();
 	cudaStream_t stream[CANTI_TIPO_REC];
@@ -145,20 +225,30 @@ void calculaDLRv2(float radio) {
 
 		cudaStreamCreate(&stream[tema]);
 
-		if (cantixtipo[tema] > tambrec) {
-			cantidad_rec_alojados = tambrec - (cantixtipo[tema] % tambrec)
-					+ cantixtipo[tema];
-		} else {
-			cantidad_rec_alojados = cantixtipo[tema];
-			tambrec = cantidad_rec_alojados;
-			tamsharedmem = sizeof(float) * 4 * tambrec;
-		}
+		if (cantixtipo[tema] < tambrec) {
 
-		calculadistLRv3<<<canti_bloques, canti_hilos, tamsharedmem, stream[tema]>>>(
-				cantiloc, cantidad_rec_alojados, cantixtipo[tema], tema, offset,
-				tambrec, dloc_x, dloc_y, dloc_z, (drec_x + offset),
-				(drec_y + offset), (drec_z + offset), (drec_uid + offset),
-				ddist_resultado, didrec_resultado);
+			tamsharedmem = sizeof(float) * 4 * cantixtipo[tema];
+
+			printf("Kernel chico: %d => %d\n", tema, cantixtipo[tema]);
+
+			calculadistLRv3<<<canti_bloques, canti_hilos, tamsharedmem,
+					stream[tema]>>>(cantiloc, cantixtipo[tema], tema, offset,
+					cantixtipo[tema], dloc_x, dloc_y, dloc_z, (drec_x + offset),
+					(drec_y + offset), (drec_z + offset), (drec_uid + offset),
+					ddist_resultado, didrec_resultado);
+
+		} else {
+			tamsharedmem = sizeof(float) * 4 * tambrec;
+			printf("Kernel GRANDE: %d => %d\n", tema, cantixtipo[tema]);
+
+
+			calculadistLRv3G<<<canti_bloques, canti_hilos, tamsharedmem,
+					stream[tema]>>>(cantiloc, cantixtipo[tema], tema, offset,
+					tambrec, dloc_x, dloc_y, dloc_z, (drec_x + offset),
+					(drec_y + offset), (drec_z + offset), (drec_uid + offset),
+					ddist_resultado, didrec_resultado);
+
+		}
 
 		offset += cantixtipo[tema];
 	}
@@ -268,7 +358,7 @@ void liberaMemoria(void) {
 void imprimeResultado(float radio) {
 	FILE * fh;
 
-	fh = fopen("./salidav3.txt", "w");
+	fh = fopen("/devel/salidav3.txt", "w");
 	for (int i = 0; i < cantiloc; i++) {
 		PLocalidad pl = (ploc + i);
 		for (int tema = 0; tema < CANTI_TIPO_REC; tema++) {
