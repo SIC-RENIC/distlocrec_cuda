@@ -123,9 +123,9 @@ __global__ void calculadistLRv3G(int nlocs, int nrecsR, int ntipo, int offset,
 	int idrec = -1;
 	float daux;
 	unsigned int k, j, tambrec_loc = tambrec;
-	unsigned int rec_faltantes = nrecsR, avance = 0;
+	int rec_faltantes = nrecsR, avance = 0;
 
-	int vueltas = 0;
+	//int vueltas = 0;
 
 	if (id < nlocs) {
 		float x = *(dloc_x + id);
@@ -165,8 +165,8 @@ __global__ void calculadistLRv3G(int nlocs, int nrecsR, int ntipo, int offset,
 
 			__syncthreads();
 
-			vueltas++;
-		} while (rec_faltantes > 0 && vueltas < 4);
+			//vueltas++;
+		} while (rec_faltantes > 0 /*&& vueltas < 4*/);
 
 		*(ddist_resultado + (id * CANTI_TIPO_REC) + ntipo) = dist;
 		*(didrec_resultado + (id * CANTI_TIPO_REC) + ntipo) = idrec;
@@ -175,6 +175,9 @@ __global__ void calculadistLRv3G(int nlocs, int nrecsR, int ntipo, int offset,
 
 }
 
+/**
+ * Kernel para pruebas en vacio no realiza ningun calculo
+ */
 __global__ void calculadistLRv3G_vacio(int nlocs, int nrecsR, int ntipo,
 		int offset, int tambrec, float* dloc_x, float* dloc_y, float* dloc_z,
 		float* drec_x, float* drec_y, float* drec_z, int* drec_uid,
@@ -194,6 +197,7 @@ void calculaDLRv2(float radio) {
 	int tema;
 
 	int canti_hilos = 640;
+
 	int canti_bloques = ceil(cantiloc / canti_hilos) + 1;
 
 	const unsigned int tambrec = 3072;
@@ -229,7 +233,7 @@ void calculaDLRv2(float radio) {
 
 			tamsharedmem = sizeof(float) * 4 * cantixtipo[tema];
 
-			printf("Kernel chico: %d => %d\n", tema, cantixtipo[tema]);
+			//printf("Kernel chico: %d => %d\n", tema, cantixtipo[tema]);
 
 			calculadistLRv3<<<canti_bloques, canti_hilos, tamsharedmem,
 					stream[tema]>>>(cantiloc, cantixtipo[tema], tema, offset,
@@ -239,8 +243,7 @@ void calculaDLRv2(float radio) {
 
 		} else {
 			tamsharedmem = sizeof(float) * 4 * tambrec;
-			printf("Kernel GRANDE: %d => %d\n", tema, cantixtipo[tema]);
-
+			//printf("Kernel GRANDE: %d => %d\n", tema, cantixtipo[tema]);
 
 			calculadistLRv3G<<<canti_bloques, canti_hilos, tamsharedmem,
 					stream[tema]>>>(cantiloc, cantixtipo[tema], tema, offset,

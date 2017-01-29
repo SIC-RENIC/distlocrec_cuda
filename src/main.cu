@@ -5,6 +5,7 @@
  *      Author: alfonso
  */
 #include "distlocrec.h"
+#include <cuda.h>
 
 extern void cargaArchivoLocs(char *);
 extern void cargaArchivoRecs(char *);
@@ -62,6 +63,8 @@ int main(int cargs, char ** args) {
 	free(ploc);
 	free(prec);
 	free(pdic);
+
+	cudaDeviceReset();
 	return 0;
 }
 
