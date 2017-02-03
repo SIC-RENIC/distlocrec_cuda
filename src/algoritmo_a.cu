@@ -125,7 +125,6 @@ __global__ void calculadistLRv3G(int nlocs, int nrecsR, int ntipo, int offset,
 	unsigned int k, j, tambrec_loc = tambrec;
 	int rec_faltantes = nrecsR, avance = 0;
 
-	//int vueltas = 0;
 
 	if (id < nlocs) {
 		float x = *(dloc_x + id);
@@ -165,8 +164,8 @@ __global__ void calculadistLRv3G(int nlocs, int nrecsR, int ntipo, int offset,
 
 			__syncthreads();
 
-			//vueltas++;
-		} while (rec_faltantes > 0 /*&& vueltas < 4*/);
+
+		} while (rec_faltantes > 0);
 
 		*(ddist_resultado + (id * CANTI_TIPO_REC) + ntipo) = dist;
 		*(didrec_resultado + (id * CANTI_TIPO_REC) + ntipo) = idrec;
@@ -200,7 +199,8 @@ void calculaDLRv2(float radio) {
 
 	int canti_bloques = ceil(cantiloc / canti_hilos) + 1;
 
-	const unsigned int tambrec = 3072;
+	//const unsigned int tambrec = 3072;
+	const unsigned int tambrec = 2000;
 
 	size_t tamsharedmem;
 
