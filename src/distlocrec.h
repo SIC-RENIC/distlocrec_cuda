@@ -8,7 +8,7 @@
 #define __DISTLOC_H__
 
 
-#define CANTI_TIPO_REC 23
+#define CANTI_TIPO_REC 24
 
 //Definición de la estructura de Localidad
 struct Localidad{
@@ -32,7 +32,7 @@ struct Localidad{
   float dist[CANTI_TIPO_REC];
 
   //claves conapo a las localidades de los recursos
-  int c[23];
+  int c[CANTI_TIPO_REC];
 };
 
 typedef struct Localidad sLocalidad;
