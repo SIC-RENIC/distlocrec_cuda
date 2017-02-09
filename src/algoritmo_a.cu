@@ -41,13 +41,6 @@ float *drec_z;
 int *drec_uid;
 
 //valores resultantes del calculo
-/*
- float *hdist_resultado;
- float *ddist_resultado;
-
- int *hidrec_resultado;
- int *didrec_resultado;
- */
 
 float *hdist_resultado[CANTI_TIPO_REC];
 float *ddist_resultado[CANTI_TIPO_REC];
@@ -59,9 +52,8 @@ int *didrec_resultado[CANTI_TIPO_REC];
  *
  */
 //se elimina ntipo y offset
-__global__ void calculadistLRv3(int nlocs, int nrecsR,
-/*int ntipo, int offset,*/
-int tambrec, float* dloc_x, float* dloc_y, float* dloc_z, float* drec_x,
+__global__ void calculadistLRv3(int nlocs, int nrecsR, int tambrec,
+		float* dloc_x, float* dloc_y, float* dloc_z, float* drec_x,
 		float* drec_y, float* drec_z, int* drec_uid, float *ddist_resultado,
 		int *didrec_resultado) {
 
@@ -104,10 +96,6 @@ int tambrec, float* dloc_x, float* dloc_y, float* dloc_z, float* drec_x,
 		}
 
 		__syncthreads();
-		/*
-		 *(ddist_resultado + (id * CANTI_TIPO_REC) + ntipo) = dist;
-		 *(didrec_resultado + (id * CANTI_TIPO_REC) + ntipo) = idrec;
-		 */
 
 		*(ddist_resultado + id) = dist;
 		*(didrec_resultado + id) = idrec;
@@ -120,9 +108,8 @@ int tambrec, float* dloc_x, float* dloc_y, float* dloc_z, float* drec_x,
  *
  */
 //se elimina ntipo y offset
-__global__ void calculadistLRv3G(int nlocs, int nrecsR,
-/*int ntipo, int offset,*/
-int tambrec, float* dloc_x, float* dloc_y, float* dloc_z, float* drec_x,
+__global__ void calculadistLRv3G(int nlocs, int nrecsR, int tambrec,
+		float* dloc_x, float* dloc_y, float* dloc_z, float* drec_x,
 		float* drec_y, float* drec_z, int* drec_uid, float *ddist_resultado,
 		int *didrec_resultado) {
 
@@ -180,13 +167,6 @@ int tambrec, float* dloc_x, float* dloc_y, float* dloc_z, float* drec_x,
 
 		} while (rec_faltantes > 0);
 
-		/*
-
-		 *(ddist_resultado + (id * CANTI_TIPO_REC) + ntipo) = dist;
-		 *(didrec_resultado + (id * CANTI_TIPO_REC) + ntipo) = idrec;
-
-		 */
-
 		*(ddist_resultado + id) = dist;
 		*(didrec_resultado + id) = idrec;
 
@@ -198,17 +178,12 @@ int tambrec, float* dloc_x, float* dloc_y, float* dloc_z, float* drec_x,
  * Kernel para pruebas en vacio no realiza ningun calculo
  */
 //se elimina ntipo y offset
-__global__ void calculadistLRv3G_vacio(int nlocs, int nrecsR,
-/*int ntipo,int offset, */
-int tambrec, float* dloc_x, float* dloc_y, float* dloc_z, float* drec_x,
+__global__ void calculadistLRv3G_vacio(int nlocs, int nrecsR, int tambrec,
+		float* dloc_x, float* dloc_y, float* dloc_z, float* drec_x,
 		float* drec_y, float* drec_z, int* drec_uid, float *ddist_resultado,
 		int *didrec_resultado) {
 
 	unsigned int id = blockIdx.x * blockDim.x + threadIdx.x;
-	/*
-	 *(ddist_resultado + (id * CANTI_TIPO_REC) + ntipo) = 0;
-	 *(didrec_resultado + (id * CANTI_TIPO_REC) + ntipo) = 0;
-	 */
 
 	*(ddist_resultado + id) = 0;
 	*(didrec_resultado + id) = 0;
@@ -261,13 +236,6 @@ void calculaDLRv2(float radio) {
 			tamsharedmem = sizeof(float) * 4 * cantixtipo[tema];
 
 			//printf("Kernel chico: %d => %d\n", tema, cantixtipo[tema]);
-			/*
-			 calculadistLRv3<<<canti_bloques, canti_hilos, tamsharedmem,
-			 stream[tema]>>>(cantiloc, cantixtipo[tema], tema, offset,
-			 cantixtipo[tema], dloc_x, dloc_y, dloc_z, (drec_x + offset),
-			 (drec_y + offset), (drec_z + offset), (drec_uid + offset),
-			 ddist_resultado, didrec_resultado);
-			 */
 
 			calculadistLRv3<<<canti_bloques, canti_hilos, tamsharedmem,
 					stream[tema]>>>(cantiloc, cantixtipo[tema],
@@ -278,12 +246,6 @@ void calculaDLRv2(float radio) {
 		} else {
 			tamsharedmem = sizeof(float) * 4 * tambrec;
 			//printf("Kernel GRANDE: %d => %d\n", tema, cantixtipo[tema]);
-
-			/*calculadistLRv3G<<<canti_bloques, canti_hilos, tamsharedmem,
-			 stream[tema]>>>(cantiloc, cantixtipo[tema], tema, offset,
-			 tambrec, dloc_x, dloc_y, dloc_z, (drec_x + offset),
-			 (drec_y + offset), (drec_z + offset), (drec_uid + offset),
-			 ddist_resultado, didrec_resultado);*/
 
 			calculadistLRv3G<<<canti_bloques, canti_hilos, tamsharedmem,
 					stream[tema]>>>(cantiloc, cantixtipo[tema], tambrec, dloc_x,
@@ -305,14 +267,6 @@ void calculaDLRv2(float radio) {
 	for (tema = 0; tema < CANTI_TIPO_REC; tema++) {
 		cudaStreamSynchronize(stream[tema]);
 	}
-
-	//sin sentido en idea
-	/*cudaMemcpy(hdist_resultado, ddist_resultado,
-	 cantiloc * CANTI_TIPO_REC * sizeof(float), cudaMemcpyDeviceToHost);
-
-	 cudaMemcpy(hidrec_resultado, didrec_resultado,
-	 cantiloc * CANTI_TIPO_REC * sizeof(int), cudaMemcpyDeviceToHost);*/
-	//se eliminan las 2 lineas anteriores
 
 	imprimeResultado(radio);
 
@@ -359,20 +313,7 @@ void alojaMemoria(void) {
 	cudaMalloc((void**) &(drec_uid), cantirec * sizeof(int));
 
 //Resultados
-	/*
-	 cudaMallocHost((void **) &(hdist_resultado),
-	 cantiloc * CANTI_TIPO_REC * sizeof(float));
 
-	 cudaMalloc((void**) &(ddist_resultado),
-	 cantiloc * CANTI_TIPO_REC * sizeof(float));
-
-	 cudaMallocHost((void **) &(hidrec_resultado),
-	 cantiloc * CANTI_TIPO_REC * sizeof(int));
-
-	 cudaMalloc((void**) &(didrec_resultado),
-	 cantiloc * CANTI_TIPO_REC * sizeof(int));
-	 */
-	//idea
 	for (int i = 0; i < CANTI_TIPO_REC; i++) {
 		cudaMallocHost((void **) &(hdist_resultado[i]),
 				cantiloc * sizeof(float));
@@ -391,10 +332,6 @@ void alojaMemoria(void) {
  *
  */
 void liberaMemoria(void) {
-	/*
-	 cudaFree(didrec_resultado);
-	 cudaFreeHost(hidrec_resultado);
-	 */
 
 	for (int i = 0; i < CANTI_TIPO_REC; i++) {
 		cudaFree(didrec_resultado[i]);
@@ -429,22 +366,6 @@ void liberaMemoria(void) {
  */
 void imprimeResultado(float radio) {
 	FILE * fh;
-
-	/*fh = fopen("/devel/salidav3.txt", "w");
-	 for (int i = 0; i < cantiloc; i++) {
-	 PLocalidad pl = (ploc + i);
-	 for (int tema = 0; tema < CANTI_TIPO_REC; tema++) {
-	 float distancia = *(hdist_resultado + (i * CANTI_TIPO_REC) + tema);
-	 int j = *(hidrec_resultado + (i * CANTI_TIPO_REC) + tema);
-	 PRecurso pr = (prec + j);
-
-	 fprintf(fh, "%d,%d,%d,%s,%d,%lf,%d,%d,%d,0\n", pl->est, pl->mun,
-	 pl->loc, (pdic + tema)->nombre, pl->pob, radio * distancia,
-	 pr->est, pr->mun, pr->loc);
-	 }
-	 }
-
-	 fclose(fh);*/
 
 	fh = fopen("/devel/salidav4.txt", "w");
 	for (int i = 0; i < cantiloc; i++) {
